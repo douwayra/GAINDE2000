@@ -1,0 +1,35 @@
+# Virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+.ipynb_checkpoints/
+
+# Large media & backups
+*.mov
+*.mp4
+*.zip
+*.bak
+Capture d’écran *.png
+
+# Databases and locks
+*.db
+*.db.tmp
+*.log
+data/csv/
+
+# Node & Frontend Build
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+
+# Auto-generated reports in project root
+Rapport_Exploitation_*.pdf
+Rapport_Fin_de_Journee.pdf
+Rapport_Gainde_2000.pdf
+Rapport_Exploitation_Mensuel_Sentinel.pdf

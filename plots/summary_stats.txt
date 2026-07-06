@@ -1,0 +1,43 @@
+=== RAPPORT STATISTIQUE D'EDA ===
+
+Valeur totale des factures : 29.949 Milliers de Milliards CFA (Trillions)
+Valeur totale cumulée des articles : 35.325 Milliers de Milliards CFA (Trillions)
+Nombre de dossiers douaniers uniques : 350791
+Nombre d'importateurs uniques enregistrés : 18144
+Nombre d'exportateurs uniques enregistrés : 57056
+
+--- TOP 10 PAYS D'ORIGINE PAR VALEUR (MILLIARDS CFA) ---
+Sénégal: 7153.37 GFCFA
+France: 3910.36 GFCFA
+Pays-Bas: 2029.90 GFCFA
+Chine: 2025.00 GFCFA
+Inde: 1741.82 GFCFA
+Cote d Ivoire: 1547.65 GFCFA
+Maroc: 1081.23 GFCFA
+Belgique: 1067.46 GFCFA
+Ghana: 839.06 GFCFA
+Turquie: 806.24 GFCFA
+
+--- TOP 10 DES BANQUES PAR VOLUME DE DOSSIERS ---
+SGBS: 48404 dossiers
+CBAO Groupe Attijariwafa Bank: 40099 dossiers
+BICIS: 35817 dossiers
+ORABANK: 21024 dossiers
+ECOBANK: 18535 dossiers
+CITIBANK: 12805 dossiers
+BOA: 11951 dossiers
+BIS: 9122 dossiers
+CREDIT DU SENEGAL: 8016 dossiers
+BANQUE ATLANTIQUE: 5265 dossiers
+
+--- TOP 10 DES ASSURANCES PAR VOLUME DE DOSSIERS ---
+AXA: 14447 dossiers
+ALLIANZ SENEGAL: 10192 dossiers
+NSIA: 6385 dossiers
+SALAMA ASSURANCES: 5171 dossiers
+AMSA: 5060 dossiers
+CNART: 4195 dossiers
+SONAM: 3787 dossiers
+ASKIA ASSURANCES: 3700 dossiers
+PA: 3247 dossiers
+WafaAssurances: 2553 dossiers
