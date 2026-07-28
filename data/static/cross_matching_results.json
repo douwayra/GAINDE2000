@@ -1,0 +1,41 @@
+[
+  {
+    "id_anomalie": "ANO-2026-001",
+    "manifeste": "MAN-2026-08912",
+    "bl_number": "BL-CMA-99412",
+    "type_anomalie": "ÉCART_FORMAT_CONTENEUR",
+    "severite": "CRITICAL",
+    "declaration_douane_gainde": "Conteneur 20 pieds (Dry)",
+    "manifeste_port_pad": "Conteneur 40 pieds (High Cube)",
+    "consignataire": "CMA CGM SENEGAL",
+    "ecart_valeur_cfa": 145000000,
+    "statut": "À VÉRIFIER EN DOUANE",
+    "date_detection": "2026-07-28 16:05:55"
+  },
+  {
+    "id_anomalie": "ANO-2026-002",
+    "manifeste": "MAN-2026-08945",
+    "bl_number": "BL-MSK-44120",
+    "type_anomalie": "SOUS_DECLARATION_TONNAGE",
+    "severite": "HIGH",
+    "declaration_douane_gainde": "12 500 kg (Déclaré)",
+    "manifeste_port_pad": "28 400 kg (Pesée Portuaire)",
+    "consignataire": "MAERSK SENEGAL S.A.",
+    "ecart_valeur_cfa": 68000000,
+    "statut": "SUSPECT - CONTRÔLE PESÉE",
+    "date_detection": "2026-07-28 16:05:55"
+  },
+  {
+    "id_anomalie": "ANO-2026-003",
+    "manifeste": "MAN-2026-08990",
+    "bl_number": "BL-GRM-11204",
+    "type_anomalie": "VISA_PAD_MANQUANT",
+    "severite": "MEDIUM",
+    "declaration_douane_gainde": "BAE Accordé le 27/07/2026",
+    "manifeste_port_pad": "VISA PAD non validé (En attente)",
+    "consignataire": "GRIMALDI SENEGAL",
+    "ecart_valeur_cfa": 18500000,
+    "statut": "BLOCAGE SORTIE PORTAIL",
+    "date_detection": "2026-07-28 16:05:55"
+  }
+]
