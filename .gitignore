@@ -33,3 +33,7 @@ Rapport_Exploitation_*.pdf
 Rapport_Fin_de_Journee.pdf
 Rapport_Gainde_2000.pdf
 Rapport_Exploitation_Mensuel_Sentinel.pdf
+
+# Exclude Infinity Sentinel completely from Git
+infinity_sentinel/
+
