@@ -12,8 +12,9 @@ import {
   BarChart3
 } from 'lucide-react';
 
-// Components
+// Components — Module Infinity Sentinel-2 (Port Autonome de Dakar & IPMD)
 import Login from './components/Login';
+import IpmdSuiteTab from './components/IpmdSuiteTab';
 import DashboardTab from './components/DashboardTab';
 import ImportsTab from './components/ImportsTab';
 import ExportsTab from './components/ExportsTab';
@@ -32,8 +33,8 @@ export default function App() {
   const [role, setRole] = useState('');
   const [bureau, setBureau] = useState('');
   
-  // Navigation & Tabs
-  const [activeTab, setActiveTab] = useState('executive');
+  // Navigation & Tabs — Default tab: Infinity Sentinel Suite
+  const [activeTab, setActiveTab] = useState('ipmd-suite');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Theme Toggle State
@@ -289,7 +290,7 @@ export default function App() {
       return true; // Admin sees all tabs
     }
     
-    if (tabId === 'executive') return true;
+    if (tabId === 'ipmd-suite' || tabId === 'executive') return true;
 
     if (role === 'direction') {
       return ['imports', 'exports', 'logistics', 'business', 'finance'].includes(tabId);
@@ -321,6 +322,11 @@ export default function App() {
 
   // Tab Details for Page Header
   const tabDetails = {
+    'ipmd-suite': {
+      label: "Infinity Sentinel-2 (Port & IPMD V2)",
+      desc: "Supervision portuaire, formalités (BAE, BAD, DO, VISA), escale navires AIS, SLAs & cross-matching IA Douane x Port.",
+      icon: Layers
+    },
     executive: {
       label: "Dashboard Exécutif",
       desc: "Vue d'ensemble de l'activité commerciale, KPIs macro et cartographie.",
@@ -627,6 +633,7 @@ export default function App() {
           </div>
         ) : (
           <div className="tab-content active">
+            {activeTab === 'ipmd-suite' && <IpmdSuiteTab role={role} theme={theme} lang={lang} />}
             {activeTab === 'executive' && (
               <DashboardTab 
                 data={dashboardData} 
