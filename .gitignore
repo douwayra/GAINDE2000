@@ -36,4 +36,4 @@ Rapport_Exploitation_Mensuel_Sentinel.pdf
 
 # Exclude Infinity Sentinel completely from Git
 infinity_sentinel/
-
+create_infinity_sentinel.ps1
