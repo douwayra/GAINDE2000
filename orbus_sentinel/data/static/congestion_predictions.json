@@ -1,0 +1,24 @@
+[
+  {
+    "imo": "IMO-9811000",
+    "navire": "CMA CGM ANTOINE DE SAINT EXUPERY",
+    "pavillon": "France",
+    "type_navire": "Porte-conteneurs (20 700 TEU)",
+    "postes_quai_cible": "Môle 8 (Terminal à Conteneurs)",
+    "temps_sejour_estime_heures": 36.5,
+    "risque_congestion": "ÉLEVÉ (Saturation quai 85%)",
+    "risque_surstaries_cfa": 45000000,
+    "recommandation_action": "Prioriser la sortie des conteneurs sous VISA PAD et activer les créneaux H24."
+  },
+  {
+    "imo": "IMO-9720455",
+    "navire": "MAERSK MC-KINNEY MOLLER",
+    "pavillon": "Danemark",
+    "type_navire": "Porte-conteneurs (18 270 TEU)",
+    "postes_quai_cible": "Rade Nord (En attente mouillage)",
+    "temps_sejour_estime_heures": 48.0,
+    "risque_congestion": "MODÉRÉ",
+    "risque_surstaries_cfa": 22000000,
+    "recommandation_action": "Affecter au Poste 4 dès le départ du navire Grimaldi."
+  }
+]
