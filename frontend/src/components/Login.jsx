@@ -51,15 +51,14 @@ export default function Login({ onLoginSuccess }) {
 
   return (
     <div className="login-overlay">
-      <video autoPlay muted loop playsInline className="login-video-bg">
-        <source src="assets/port1.mp4" type="video/mp4" />
-        <source src="https://assets.mixkit.co/videos/preview/mixkit-abstract-laser-lights-background-40742-large.mp4" type="video/mp4" />
+      <video autoPlay muted loop playsInline preload="auto" className="login-video-bg">
+        <source src="/assets/port1.mp4" type="video/mp4" />
       </video>
       <div className="login-video-overlay"></div>
 
       <div className="login-card" style={{ borderTop: '5px solid #63a0e8' }}>
         <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '5px' }}>
-          <img src="assets/gainde_logo_transparent.png" alt="Orbus Sentinel Logo" style={{ height: '60px', objectFit: 'contain' }} />
+          <img src="/assets/gainde_logo_transparent.png" alt="Orbus Sentinel Logo" style={{ height: '60px', objectFit: 'contain' }} />
         </div>
         <h2>Orbus Sentinel</h2>
         <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center', marginTop: '-10px' }}>

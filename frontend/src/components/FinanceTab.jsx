@@ -3,7 +3,7 @@ import * as echarts from 'echarts';
 import { fetchWithAuth, formatCFA } from '../utils/api';
 import AnimatedCounter from './AnimatedCounter';
 
-export default function FinanceTab({ theme }) {
+export default function FinanceTab({ theme, filters }) {
   const [data, setData] = useState(null);
   const [prospects, setProspects] = useState([]);
   const [filteredProspects, setFilteredProspects] = useState([]);
@@ -19,16 +19,23 @@ export default function FinanceTab({ theme }) {
   const chartInstances = useRef({ topClients: null, revenueForecast: null });
 
   const isDark = theme !== 'light';
+  const filterKey = [filters?.year || '', filters?.country || '', filters?.bank || ''].join('|');
 
   // 1. Fetch data
   useEffect(() => {
     const fetchFinanceData = async () => {
       try {
         setLoading(true);
+        const query = [
+          filters?.year ? `year=${encodeURIComponent(filters.year)}` : null,
+          filters?.country ? `country=${encodeURIComponent(filters.country)}` : null,
+          filters?.bank ? `bank=${encodeURIComponent(filters.bank)}` : null,
+        ].filter(Boolean).join('&');
+
         // Fetch dashboard data for KPIs & LSTM forecasts
-        const dashRes = await fetchWithAuth('/api/dashboard-data');
+        const dashRes = await fetchWithAuth(`/api/dashboard-data${query ? `?${query}` : ''}`);
         // Fetch prospects for top client list & turnovers
-        const prospectRes = await fetchWithAuth('/api/business-prospects');
+        const prospectRes = await fetchWithAuth(`/api/business-prospects${query ? `?${query}` : ''}`);
         
         if (dashRes.ok && prospectRes.ok) {
           const dashData = await dashRes.json();
@@ -77,7 +84,7 @@ export default function FinanceTab({ theme }) {
     };
 
     fetchFinanceData();
-  }, []);
+  }, [filterKey]);
 
   // 2. Filter prospects on search change
   useEffect(() => {
@@ -103,15 +110,30 @@ export default function FinanceTab({ theme }) {
   const globalTurnover = totalDossiers * 14000;
   const avgRevenuePerFile = 14000;
 
-  // 2021 actuals for seasonal projection
-  const actuals2021 = {
+  // Dynamic current/next month based on today's date
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextYear = nextMonthDate.getFullYear();
+  const nextMonth = nextMonthDate.getMonth() + 1;
+  const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  const monthShort = ["Janv", "Févr", "Mars", "Avri", "Mai", "Juin",
+    "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
+  const currentMonthStr = currentMonth.toString().padStart(2, '0');
+  const nextMonthStr = nextMonth.toString().padStart(2, '0');
+  const currentMonthLabel = `${monthNames[currentMonth - 1]} ${currentYear}`;
+  const nextMonthLabel = `${monthNames[nextMonth - 1]} ${nextYear}`;
+
+  // Seasonal baseline dossier counts per month (based on historical averages)
+  const monthlyBaseline = {
     '01': 13095, '02': 12622, '03': 14677, '04': 14021, '05': 12647, '06': 14633,
     '07': 12538, '08': 12607, '09': 13182, '10': 12986, '11': 14373, '12': 13804
   };
-  const actuals2022 = {
-    '01': 12313, '02': 14958
-  };
-  const growthFactor = 1.06; // Estimated growth based on Feb 2022
+  // Apply yearly cumulative growth: ~6% per year since 2021 baseline
+  const yearsFromBaseline = currentYear - 2021;
+  const growthFactor = Math.pow(1.06, yearsFromBaseline);
 
   let monthlyProjectedRevenue = 0;
   let forecastDates = [];
@@ -120,91 +142,73 @@ export default function FinanceTab({ theme }) {
   let forecastPeriodLabel = "";
 
   if (forecastPeriod === 'current_month') {
-    forecastTitle = "Recettes Prévisionnelles Quotidiennes (Février 2022)";
-    forecastPeriodLabel = "Févr. 2022";
+    forecastTitle = `Recettes Prévisionnelles Quotidiennes (${currentMonthLabel})`;
+    forecastPeriodLabel = `${monthShort[currentMonth - 1]}. ${currentYear}`;
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
     const basePredictions = data?.lstm_forecast?.predictions || [];
     const baseDates = data?.lstm_forecast?.dates || [];
-    
+    const prefix = `${currentYear}-${currentMonthStr}`;
     for (let i = 0; i < baseDates.length; i++) {
-      if (baseDates[i].startsWith('2022-02')) {
+      if (baseDates[i].startsWith(prefix)) {
         forecastDates.push(baseDates[i]);
         forecastRevenues.push(basePredictions[i] * 14000);
       }
     }
     if (forecastDates.length === 0) {
-      for (let day = 1; day <= 28; day++) {
-        const dStr = `2022-02-${day.toString().padStart(2, '0')}`;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dStr = `${currentYear}-${currentMonthStr}-${day.toString().padStart(2, '0')}`;
         forecastDates.push(dStr);
-        const val = 530 + Math.sin(day) * 50;
-        forecastRevenues.push(val * 14000);
+        const baseline = monthlyBaseline[currentMonthStr] || 13000;
+        const dailyBase = (baseline * growthFactor) / daysInMonth;
+        forecastRevenues.push((dailyBase + Math.sin(day) * 50) * 14000);
       }
     }
     monthlyProjectedRevenue = forecastRevenues.reduce((acc, val) => acc + val, 0);
   } 
   else if (forecastPeriod === 'next_month') {
-    forecastTitle = "Recettes Prévisionnelles Quotidiennes (Mars 2022)";
-    forecastPeriodLabel = "Mars 2022";
+    forecastTitle = `Recettes Prévisionnelles Quotidiennes (${nextMonthLabel})`;
+    forecastPeriodLabel = `${monthShort[nextMonth - 1]}. ${nextYear}`;
+    const daysInNextMonth = new Date(nextYear, nextMonth, 0).getDate();
     const basePredictions = data?.lstm_forecast?.predictions || [];
-    
-    for (let day = 1; day <= 31; day++) {
-      const dStr = `2022-03-${day.toString().padStart(2, '0')}`;
+    for (let day = 1; day <= daysInNextMonth; day++) {
+      const dStr = `${nextYear}-${nextMonthStr}-${day.toString().padStart(2, '0')}`;
       forecastDates.push(dStr);
-      const predIndex = (day - 1) % basePredictions.length;
+      const predIndex = (day - 1) % (basePredictions.length || 1);
       const baseVal = basePredictions[predIndex] || 473;
-      const val = baseVal * 1.05 + Math.cos(day) * 30;
+      const baseline = monthlyBaseline[nextMonthStr] || 13000;
+      const dailyBase = (baseline * growthFactor) / daysInNextMonth;
+      const val = (baseVal * 0.3 + dailyBase * 0.7) * 1.05 + Math.cos(day) * 30;
       forecastRevenues.push(val * 14000);
     }
     monthlyProjectedRevenue = forecastRevenues.reduce((acc, val) => acc + val, 0);
   } 
   else if (forecastPeriod === 'current_year') {
-    forecastTitle = "Recettes & Projections Mensuelles (Année 2022)";
-    forecastPeriodLabel = "Année 2022";
-    const monthsNames = [
-      "Janv", "Févr", "Mars", "Avri", "Mai", "Juin", 
-      "Juil", "Août", "Sept", "Octo", "Nove", "Déce"
-    ];
-    
+    forecastTitle = `Recettes & Projections Mensuelles (Année ${currentYear})`;
+    forecastPeriodLabel = `Année ${currentYear}`;
     for (let m = 1; m <= 12; m++) {
       const mKey = m.toString().padStart(2, '0');
-      forecastDates.push(monthsNames[m - 1]);
-      if (mKey === '01' || mKey === '02') {
-        const count = actuals2022[mKey];
-        forecastRevenues.push(count * 14000);
-      } else {
-        const count = actuals2021[mKey] * growthFactor;
-        forecastRevenues.push(count * 14000);
-      }
+      forecastDates.push(monthShort[m - 1]);
+      const baseline = monthlyBaseline[mKey] || 13000;
+      const count = baseline * growthFactor;
+      forecastRevenues.push(count * 14000);
     }
     monthlyProjectedRevenue = forecastRevenues.reduce((acc, val) => acc + val, 0);
   } 
   else if (forecastPeriod === 'twelve_months') {
-    forecastTitle = "Prévisions de CA sur 12 Mois Glissants (Mars 2022 - Février 2023)";
+    // Build rolling 12 months starting from current month - 11
+    const rollingStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    forecastTitle = `Prévisions de CA sur 12 Mois Glissants (${monthShort[rollingStart.getMonth()]} ${String(rollingStart.getFullYear()).slice(2)} - ${monthShort[currentMonth - 1]} ${String(currentYear).slice(2)})`;
     forecastPeriodLabel = "12 Mois Glissants";
-    const rollingMonths = [
-      { m: '03', y: 2022, name: "Mars 22" },
-      { m: '04', y: 2022, name: "Avr 22" },
-      { m: '05', y: 2022, name: "Mai 22" },
-      { m: '06', y: 2022, name: "Juin 22" },
-      { m: '07', y: 2022, name: "Juil 22" },
-      { m: '08', y: 2022, name: "Aoû 22" },
-      { m: '09', y: 2022, name: "Sept 22" },
-      { m: '10', y: 2022, name: "Oct 22" },
-      { m: '11', y: 2022, name: "Nov 22" },
-      { m: '12', y: 2022, name: "Déc 22" },
-      { m: '01', y: 2023, name: "Janv 23" },
-      { m: '02', y: 2023, name: "Févr 23" }
-    ];
-    
-    rollingMonths.forEach(item => {
-      forecastDates.push(item.name);
-      if (item.y === 2022) {
-        const count = actuals2021[item.m] * growthFactor;
-        forecastRevenues.push(count * 14000);
-      } else {
-        const count = actuals2022[item.m] * growthFactor;
-        forecastRevenues.push(count * 14000);
-      }
-    });
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(rollingStart.getFullYear(), rollingStart.getMonth() + i, 1);
+      const mKey = (d.getMonth() + 1).toString().padStart(2, '0');
+      const yShort = String(d.getFullYear()).slice(2);
+      forecastDates.push(`${monthShort[d.getMonth()]} ${yShort}`);
+      const yearsG = d.getFullYear() - 2021;
+      const gf = Math.pow(1.06, yearsG);
+      const count = (monthlyBaseline[mKey] || 13000) * gf;
+      forecastRevenues.push(count * 14000);
+    }
     monthlyProjectedRevenue = forecastRevenues.reduce((acc, val) => acc + val, 0);
   }
 
@@ -492,10 +496,10 @@ export default function FinanceTab({ theme }) {
                 cursor: 'pointer' 
               }}
             >
-              <option value="current_month">Mois en cours (Févr. 2022)</option>
-              <option value="next_month">Mois prochain (Mars 2022)</option>
-              <option value="current_year">Année en cours (2022)</option>
-              <option value="twelve_months">12 Mois Glissants (Mars 22 - Fév 23)</option>
+              <option value="current_month">Mois en cours ({new Date().toLocaleString('fr-FR', {month: 'long', year: 'numeric'})})</option>
+              <option value="next_month">Mois prochain ({new Date(new Date().getFullYear(), new Date().getMonth()+1,1).toLocaleString('fr-FR', {month: 'long', year: 'numeric'})})</option>
+              <option value="current_year">Année en cours ({new Date().getFullYear()})</option>
+              <option value="twelve_months">12 Mois Glissants</option>
             </select>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '15px' }}>

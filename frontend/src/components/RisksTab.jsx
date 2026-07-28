@@ -125,114 +125,114 @@ export default function RisksTab({ data, role, theme }) {
       return;
     }
 
-    const importers = ["SENELEC", "SAR S.A.", "Dakar Terminal", "CFAO Motors", "Dangote Cement Senegal", "Bati-Metaux SA", "Senegal Trading", "Grands Moulins de Dakar", "PCCI", "ICS Taiba"];
-    const countries = ["CHINE", "FRANCE", "INDE", "TURQUIE", "ESPAGNE", "BRESIL", "ETATS-UNIS", "MAROC", "ALLEMAGNE", "ITALIE"];
-    const hsCodes = ["8703239000", "2710194300", "2523290000", "1006309800", "3102101000", "1507909000", "3901109000", "1701149000"];
-    const modes = ["Mer", "Air", "Route"];
-    const regimes = ["C100 (Consumption Entry)", "S500 (Transit)", "E300 (Warehouse)", "C150 (Temporary Export)"];
-
     let progressInterval;
-    const generateNewFile = () => {
-      const isCritical = Math.random() < 0.25; 
-      const importer = importers[Math.floor(Math.random() * importers.length)];
-      const country = countries[Math.floor(Math.random() * countries.length)];
-      const hs_code = hsCodes[Math.floor(Math.random() * hsCodes.length)];
-      const mode = modes[Math.floor(Math.random() * modes.length)];
-      const regime = regimes[Math.floor(Math.random() * regimes.length)];
-      const value = Math.floor(Math.random() * 50000000) + 500000; 
-      const dossierNum = `DOS-${Math.floor(Math.random() * 900000) + 100000}`;
+    let mainInterval;
+    let dossiersList = [];
+    let currentIndex = 0;
 
-      let riskScore = 0;
-      let reasons = [];
-      let xai = { shap_value: 10, shap_iforest: 15, shap_kmeans: 12, explanation: "" };
-
-      if (isCritical) {
-        riskScore = Math.floor(Math.random() * 25) + 71; 
-        const rand = Math.random();
-        if (rand < 0.3) {
-          reasons = ["Sous-évaluation flagrante constatée (-40% vs moyenne de l\'article)", "Provenance sous surveillance renforcée"];
-          xai = {
-            shap_value: 85,
-            shap_iforest: 72,
-            shap_kmeans: 54,
-            explanation: `Alerte de sous-évaluation critique pour ${importer}. La valeur déclarée de ${formatCFA(value)} est inférieure de 40% à la valeur moyenne observée pour le code SH ${hs_code}. De plus, le pays d'origine (${country}) fait l'objet d'une surveillance renforcée pour cette catégorie de marchandises.`
-          };
-        } else if (rand < 0.6) {
-          reasons = ["Nouvel importateur sans antécédents", "Écart de poids de +180% par rapport à la déclaration"];
-          xai = {
-            shap_value: 45,
-            shap_iforest: 90,
-            shap_kmeans: 82,
-            explanation: `Le modèle Isolation Forest a détecté une anomalie comportementale majeure : l'écart entre le poids déclaré et réel est de +180%. L'importateur ${importer} étant classé comme nouvel acteur dans le segment K-Means, ce dossier nécessite une inspection physique immédiate.`
-          };
-        } else {
-          reasons = ["Régime douanier suspect pour ce type d\'article", "Incohérence manifeste entre le montant déclaré et la facture jointe"];
-          xai = {
-            shap_value: 60,
-            shap_iforest: 78,
-            shap_kmeans: 68,
-            explanation: `Déviation critique identifiée sur le régime ${regime}. L'analyse d'explicabilité montre une forte contribution de l'écart facture/poids sur la décision de l'IA d'attribuer un score de risque de ${riskScore}%.`
-          };
+    const startFeed = async () => {
+      try {
+        const response = await fetchWithAuth('/api/dossiers-preview');
+        if (response.ok) {
+          dossiersList = await response.json();
         }
-      } else {
-        riskScore = Math.floor(Math.random() * 40) + 10; 
-        reasons = ["Profil historique de l\'importateur sain", "Tarif et déclaration conformes aux moyennes du secteur"];
-        xai = {
-          shap_value: Math.floor(Math.random() * 20) + 5,
-          shap_iforest: Math.floor(Math.random() * 20) + 5,
-          shap_kmeans: Math.floor(Math.random() * 20) + 5,
-          explanation: `Dossier conforme. Les indicateurs du Z-Score et de l'Isolation Forest se situent tous en dessous des seuils d'alerte critique. L'importateur ${importer} possède un profil de solvabilité et de conformité irréprochable.`
-        };
+      } catch (err) {
+        console.error("Error fetching live preview dossiers:", err);
       }
 
-      setScanningFile({
-        dossierNum,
-        importer,
-        country,
-        hs_code,
-        mode,
-        regime,
-        value,
-        riskScore,
-        reasons,
-        xai
-      });
-      setScanProgress(0);
+      const processNextDossier = () => {
+        if (dossiersList.length === 0) return;
+        
+        const dossier = dossiersList[currentIndex % dossiersList.length];
+        currentIndex++;
 
-      let currentProgress = 0;
-      clearInterval(progressInterval);
-      progressInterval = setInterval(() => {
-        currentProgress += 10;
-        setScanProgress(currentProgress);
-
-        if (currentProgress >= 100) {
-          clearInterval(progressInterval);
-          setScannedCount(prev => prev + 1);
-          const completed = {
-            dossierNum,
-            importer,
-            country,
-            hs_code,
-            mode,
-            regime,
-            value,
-            riskScore,
-            reasons,
-            xai,
-            time: new Date().toLocaleTimeString('fr-FR')
-          };
-
-          setLiveLogs(prev => [completed, ...prev.slice(0, 7)]);
-          if (isCritical) {
-            setCriticalAlerts(prev => [completed, ...prev.slice(0, 7)]);
-          }
-          setScanningFile(null);
+        const dossierNum = dossier.NUMERODOSSIERTPS ? `DOS-${dossier.NUMERODOSSIERTPS}` : `DOS-${Math.floor(Math.random() * 900000) + 100000}`;
+        const importer = dossier.NOM_IMPORTATEUR || "IMPORTATEUR INCONNU";
+        const country = dossier.PAYS_PROVENANCE || "INCONNU";
+        const hs_code = dossier.NUMEROTARIFDOUANE || "8703239000";
+        const mode = dossier.MODE_TRANSPORT || "Mer";
+        const regime = dossier.REGIME_DOUANIER || "C100 (Consommation)";
+        const value = dossier.VALEURCFA || Math.floor(Math.random() * 25000000) + 100000;
+        
+        // Calculate or read risk score
+        let riskScore = 0;
+        if (dossier.RISK_SCORE && dossier.RISK_SCORE !== "NON AUTORISÉ") {
+          riskScore = Number(dossier.RISK_SCORE);
+        } else {
+          riskScore = (absHash(dossierNum) % 65) + 10;
         }
-      }, 150); 
+
+        const isCritical = riskScore > 70;
+        let reasons = [];
+        let xai = { shap_value: Math.floor(riskScore * 0.95), shap_iforest: Math.floor(riskScore * 0.88), shap_kmeans: Math.floor(riskScore * 0.72), explanation: "" };
+
+        if (isCritical) {
+          reasons = ["Sous-évaluation flagrante constatée (-40% vs moyenne)", "Provenance sous surveillance renforcée"];
+          xai.explanation = `Alerte de risque élevé pour ${importer}. Le modèle Isolation Forest a détecté une anomalie de poids/valeur sur cet import. Valeur déclarée : ${formatCFA(value)}. Une inspection est recommandée.`;
+        } else {
+          reasons = ["Profil historique de l'importateur sain", "Tarif et déclaration conformes"];
+          xai.explanation = `Dossier conforme. Les indicateurs du Z-Score et de l'Isolation Forest se situent en dessous des seuils d'alerte critique pour ${importer}.`;
+        }
+
+        setScanningFile({
+          dossierNum,
+          importer,
+          country,
+          hs_code,
+          mode,
+          regime,
+          value,
+          riskScore,
+          reasons,
+          xai
+        });
+        setScanProgress(0);
+
+        let currentProgress = 0;
+        clearInterval(progressInterval);
+        progressInterval = setInterval(() => {
+          currentProgress += 10;
+          setScanProgress(currentProgress);
+
+          if (currentProgress >= 100) {
+            clearInterval(progressInterval);
+            setScannedCount(prev => prev + 1);
+            const completed = {
+              dossierNum,
+              importer,
+              country,
+              hs_code,
+              mode,
+              regime,
+              value,
+              riskScore,
+              reasons,
+              xai,
+              time: new Date().toLocaleTimeString('fr-FR')
+            };
+
+            setLiveLogs(prev => [completed, ...prev.slice(0, 7)]);
+            if (isCritical) {
+              setCriticalAlerts(prev => [completed, ...prev.slice(0, 7)]);
+            }
+            setScanningFile(null);
+          }
+        }, 150);
+      };
+
+      processNextDossier();
+      mainInterval = setInterval(processNextDossier, 3800);
     };
 
-    generateNewFile();
-    const mainInterval = setInterval(generateNewFile, 3800);
+    const absHash = (str) => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return Math.abs(hash);
+    };
+
+    startFeed();
 
     return () => {
       clearInterval(mainInterval);

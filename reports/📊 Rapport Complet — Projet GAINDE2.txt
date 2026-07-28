@@ -1,0 +1,260 @@
+📊 Rapport Complet — Projet GAINDE2000 / Orbus Sentinel
+Date de rédaction : 20 juillet 2026
+Client : GAINDE 2000 (Guichet Unique Douanier du Sénégal)
+Prestataire : Orbus (Orbus Infinity)
+Référence Projet : douwayra/GAINDE2000
+
+1. 🎯 Contexte et Objectif du Projet
+GAINDE 2000 administre le système ORBUS, le guichet unique de télédéclaration douanière du Sénégal. Ce système enregistre tous les flux d'importation, d'exportation, de réexportation et de transit de marchandises.
+
+L'objectif de la mission était de construire, de bout en bout, une plateforme analytique sécurisée capable de :
+
+Ingérer, nettoyer et centraliser des données douanières volumineuses (1,8+ million de lignes, 2020–2026)
+Produire des analyses statistiques et IA (détection de fraude, segmentation, prévision)
+Exposer ces données via une API sécurisée avec gestion des rôles
+Visualiser les résultats dans un dashboard web moderne multi-onglets
+2. 🏗️ Architecture Technique
+
+┌───────────────────────────────────────────────────────┐
+│              SOURCES DE DONNÉES                       │
+│  Fichiers CSV Bruts (1,8M lignes)  +  SQL Server      │
+│  (DOSSIERTPS, FACTURE, CONTENIR)   (192.168.2.138)    │
+└───────────────┬───────────────────────────────────────┘
+                │ ETL Pipeline (Polars + DuckDB)
+                ▼
+┌───────────────────────────────────────────────────────┐
+│              COUCHE DONNÉES                           │
+│  DuckDB  → gainde_douane.db  (requêtes analytiques)   │
+│  SQLite  → users.db          (authentification)       │
+│  SQL Server MSSQL            (données temps réel)     │
+└───────────────┬───────────────────────────────────────┘
+                │
+                ▼
+┌───────────────────────────────────────────────────────┐
+│              BACKEND API (FastAPI / Python)            │
+│  app.py — 1940 lignes — 27 routes REST                │
+│  Auth JWT · Rôles · Isolation Forest · Chatbot SQL    │
+└───────────────┬───────────────────────────────────────┘
+                │ HTTP (proxy Vite → port 8000)
+                ▼
+┌───────────────────────────────────────────────────────┐
+│              FRONTEND WEB (React + Vite)              │
+│  14 composants · 10 onglets · Thème clair/sombre      │
+│  ECharts · Lucide Icons · Mode réactif                │
+└───────────────────────────────────────────────────────┘
+Stack Technologique
+Couche	Technologies
+ETL / Data	Polars (Rust), DuckDB, Pandas, Scipy
+Machine Learning	Scikit-Learn (Isolation Forest, K-Means), XGBoost
+Backend	Python 3.12, FastAPI, Uvicorn, PyMSSQL, SQLite, bcrypt, JWT
+Frontend	React 19, Vite 6, ECharts, Lucide React, CSS natif
+Outils	DBeaver, Jupyter Notebook, Git
+3. 🔄 Pipeline ETL et Nettoyage des Données
+3.1 Sources Ingérées
+Fichiers CSV historiques : 2020–2026 (1,8 million de lignes)
+3 tables logiques :
+DOSSIERTPS — Dossiers douaniers (administratif)
+FACTURE — Factures (transactionnel)
+CONTENIR — Articles par facture (physique)
+3.2 Problèmes Résolus
+Problème	Solution Appliquée
+Fichiers CSV sans en-têtes	Reconstruction manuelle des colonnes documentée
+Encodage corrompu (SÃ©nÃ©gal)	Lecture utf-8-sig + html.unescape
+9 variantes du mot "Sénégal"	Normalisation géographique unifiée
+Codes pays non standards	Mapping vers nomenclature ISO
+Devises mixtes (EURO → EUR)	Standardisation ISO 4217
+Modes de transport hétérogènes	Réduction en 5 catégories : Mer, Air, Route, Fer, Autres
+Types d'opération codés (I/E/R/S)	Traduction : Importation, Exportation, Réexportation, Transit
+3.3 Volume Final Traité
+253 780 dossiers d'importation (72,3 %)
+75 507 dossiers d'exportation (21,5 %)
+12 732 dossiers de réexportation (3,6 %)
+8 772 dossiers de transit (2,5 %)
+Valeur totale traitée : ~35 Trillions CFA
+4. 📈 Analyses Statistiques Avancées
+4.1 Corrélations (Spearman)
+Variables	Corrélation	Interprétation
+Poids Net ↔ Poids Brut	0,9965	Cohérence physique absolue
+Valeur CFA ↔ Valeur FOB	0,9465	Cohérence financière validée
+Quantité ↔ Valeur CFA	0,4086	Relation modérée (valeur unitaire variable)
+4.2 Saisonnalité (Autocorrélation)
+Lag 7 jours → 0,854 : Cycle hebdomadaire extrêmement fort
+Lag 14 jours → 0,825 : Saisonnalité bi-hebdomadaire confirmée
+Creux en août, pics en novembre–décembre
+4.3 Concentration de Pareto
+Les 20 % d'importateurs représentent 98,54 % de la valeur totale
+Les 20 % de codes tarifaires concentrent 97,50 % du montant global
+4.4 Tests Chi-Deux
+Mode de transport ↔ Devise : P-Value = 0.000 → dépendance statistiquement significative
+5. 🤖 Machine Learning et Scoring de Risque
+5.1 Segmentation K-Means (4 clusters d'importateurs)
+Cluster	Taille	Fréquence moy.	Valeur moy./an
+Petits occasionnels	12 175	4,1 dossiers	432 M CFA
+Réguliers	943	161,2 dossiers	13,4 Mds CFA
+Grands comptes	1	674 dossiers	151,4 Mds CFA
+Stratégiques	52	1 862 dossiers	302 Mds CFA
+5.2 Score de Risque Douanier (0–100)
+Critère	Points
+Sous-évaluation détectée	+40
+Valeur dans top 10 %	+20
+Nouveau déclarant (< 3 dossiers)	+15
+Pays d'origine à risque	+15
+Quantité inhabituellement haute	+10
+Résultats :
+
+🟢 Faible risque (< 30) : 337 008 dossiers
+🟡 Moyen risque (30–60) : 13 507 dossiers
+🔴 Haut risque (≥ 60) : 276 dossiers
+5.3 Détection de Fraude / Anomalies
+Méthode	Factures signalées
+Z-Score Robuste (règle métier)	1 255
+Isolation Forest (IA — 1 % contamination)	11 448
+Intersection (priorité absolue)	132
+5.4 Prévision des Flux (Forecasting)
+Modèle	MAE	RMSE	MAPE
+Moyenne Mobile (Baseline)	336	382	1479 %
+Régression Linéaire	160	234	168 %
+Random Forest	115	195	141 % ✅
+Gradient Boosting	117	195	152 %
+6. 🔐 Backend API — FastAPI (app.py)
+6.1 Architecture de Sécurité
+Authentification JWT (HS256, 24h d'expiration)
+Hachage bcrypt des mots de passe
+Contrôle d'accès par rôle (RBAC)
+Logs d'audit SQLite (timestamp, IP client, IP serveur, localisation)
+6.2 Rôles Utilisateurs
+Rôle	Accès
+admin	Tout (gestion utilisateurs, audit)
+direction	Dashboard exécutif, alertes budget, PDF
+inspecteur	Simulation de risque, marquage de dossiers
+transitaire	Données dossiers de son bureau
+partenaire	Fiabilité importateurs (banques/assurances)
+statisticien	Export CSV anonymisé
+journaliste	Vue publique limitée
+6.3 Routes API (27 endpoints)
+Endpoint	Méthode	Description
+/api/auth/login	POST	Connexion JWT
+/api/dashboard-data	GET	KPIs exécutifs globaux
+/api/filter-options	GET	Options de filtres (années, modes…)
+/api/dossiers-preview	GET	Preview des dossiers paginés
+/api/business-prospects	GET	Prospects business
+/api/inspecteur/simulate-risk	POST	Simulation de score de risque
+/api/inspecteur/mark-inspection	POST	Marquer un dossier pour inspection
+/api/direction/budget-alerts	GET	Alertes dépassement budgétaire
+/api/direction/simulate-weights	POST	Simulation des poids de risque
+/api/direction/generate-pdf-report	GET	Génération rapport PDF dynamique
+/api/partenaire/importer-reliability	GET	Score de fiabilité importateurs
+/api/statistician/export-csv	POST	Export CSV anonymisé
+/api/admin/audit-logs	GET	Logs de sécurité
+/api/admin/create-user	POST	Création d'utilisateur
+/api/admin/users	GET	Liste des utilisateurs
+/api/assistant/chat	POST	Chatbot IA (NL → SQL)
+6.4 Couche d'Abstraction SQL Server (MSSQL)
+Développement d'un wrapper de traduction SQL automatique :
+
+Conversion LIMIT → TOP
+Mapping noms de tables (dossiers → DOSSIERTPS, etc.)
+Mapping noms de colonnes (35+ colonnes mappées)
+Traduction fonctions (dayname, monthname, substring, etc.)
+7. 🌐 Frontend Web — React + Vite
+7.1 Fonctionnalités Générales
+Authentification avec page de login dédiée
+Thème clair / sombre (persisté en localStorage)
+Responsive (menu mobile)
+Rechargement automatique des données (polling)
+7.2 Les 10 Onglets du Dashboard
+Onglet	Composant	Contenu
+🏠 Dashboard Exécutif	DashboardTab.jsx	KPIs globaux, carte mondiale, Sankey, heatmap, tendances
+📥 Imports	ImportsTab.jsx	Analyse des flux d'importation, top pays, top produits
+📤 Exports	ExportsTab.jsx	Flux d'exportation, répartition géographique
+⚠️ Risques	RisksTab.jsx (66 Ko)	Scoring de risque, anomalies Isolation Forest, heatmap risque
+🚢 Logistique	LogisticsTab.jsx	Modes de transport, délais, performance
+💼 Business	BusinessTab.jsx	Prospects, opportunités commerciales
+💳 Paiements	PaymentTab.jsx	Devises, banques, assurances
+💰 Finance	FinanceTab.jsx	Valeurs CFA/FOB, budget, taux de change
+🔒 Cybersécurité	CybersecurityTab.jsx	Logs d'audit, alertes intrusion
+👥 Admin Utilisateurs	AdminUsersTab.jsx	Gestion des comptes et droits
+7.3 Fonctionnalités Avancées
+Chatbot IA (Chatbot.jsx) : Interface conversationnelle NL → SQL
+Modal Timeline Dossier (DossierTimelineModal.jsx) : Historique d'un dossier
+Compteurs animés (AnimatedCounter.jsx) : Animations des KPIs
+Génération PDF multi-rapports : Rapports exécutifs, fraude, logistique, partenaires
+Carte monde interactive : Provenance des importations (world.json)
+8. 📄 Génération de Rapports PDF
+Un module dédié pdf_generator.py (1 122 lignes) permet de générer des rapports PDF dynamiques :
+
+Type de Rapport	Contenu
+Rapport Exécutif	KPIs globaux, répartition opérations, tendances
+Rapport Fraude	Anomalies détectées, priorités d'inspection
+Rapport Logistique	Flux par mode de transport, saisonnalité
+Rapport Partenaires	Fiabilité importateurs, performance banques
+9. 📁 Livrables Produits
+Fichier	Type	Description
+app.py	Code Python (1 940 lignes)	API backend complète
+pdf_generator.py	Code Python (1 122 lignes)	Générateur de rapports
+frontend/	Application React	Interface web complète
+scripts/etl_pipeline.py	Script ETL	Pipeline de nettoyage données
+scripts/etl_pipeline_duckdb.py	Script ETL	Pipeline optimisé DuckDB
+scripts/run_advanced_analysis.py	Script ML	Analyses statistiques complètes
+scripts/generate_excel_dashboard.py	Script	Dashboard Excel automatisé
+scripts/init_auth_db.py	Script	Initialisation BD utilisateurs
+gainde_douane_dashboard.xlsx	Excel	Dashboard statique multi-onglets
+data/models/iforest_model.pkl	Modèle ML	Isolation Forest entraîné
+data/models/kmeans_model.pkl	Modèle ML	K-Means segmentation
+data/static/dashboard_data.json	Données	Cache statique du dashboard
+notebooks/A1.ipynb	Jupyter	Notebook d'analyse exploratoire
+plots/*.png	Graphiques	8 visualisations générées
+docs/DOCUMENTATION.md	Documentation	Documentation technique complète
+docs/DICTIONNAIRE_DONNEES.md	Documentation	Dictionnaire des données
+guide_utilisation_sentinel.pdf	Guide	Manuel utilisateur
+10. 🔧 Infrastructure et Déploiement
+Architecture 2 serveurs (mode développement)
+
+Backend  → uvicorn.exe app:app --host 127.0.0.1 --port 8000 --reload
+Frontend → npm.cmd run dev  (port 5173, proxy → 8000)
+Base de données
+SQL Server MSSQL : 192.168.2.138 — Données douanières temps réel (APPLICATIONS, BD_GESTIONDOSSIERSFTP…)
+SQLite users.db : Authentification, audit, dossiers marqués
+DuckDB gainde_douane.db : Données historiques analytiques
+Note : Des erreurs de timeout MSSQL sont observées (DB-Lib error 20047) — le backend bascule automatiquement sur les données statiques JSON en fallback.
+
+11. ⚡ Modifications Post-Commit (Non encore commités)
+Depuis le commit initial du 6 juillet 2026, les fichiers suivants ont été modifiés :
+
+Fichier	Modifications
+app.py	+919 lignes nettes : nouvelles routes, chatbot SQL, wrapper MSSQL amélioré
+frontend/index.html	+25 lignes : métadonnées, error logging
+frontend/src/App.jsx	+70 lignes : onglets supplémentaires, thème
+frontend/src/components/RisksTab.jsx	Refonte partielle (200 lignes modifiées)
+frontend/src/components/FinanceTab.jsx	Refonte partielle (144 lignes modifiées)
+frontend/src/components/DashboardTab.jsx	Ajustements graphiques
+frontend/src/components/BusinessTab.jsx	Correction mineure
+12. 📊 Chiffres Clés du Projet
+Métrique	Valeur
+Lignes de code Python (backend + scripts)	~7 800 lignes
+Lignes de code React/JSX (frontend)	~12 000 lignes
+Lignes de CSS	~1 700 lignes
+Fichiers source créés	107 fichiers
+Routes API	27 endpoints
+Composants React	14 composants
+Onglets du dashboard	10 onglets
+Données traitées	1,8 million de lignes
+Valeur financière analysée	~35 Trillions CFA
+Modèles ML entraînés	3 modèles (IForest, KMeans, Scaler)
+Rapport généré le 20 juillet 2026 — Projet Orbus Sentinel / GAINDE2000
+
+
+
+
+Serveur Backend (FastAPI)
+
+Commande : .\.venv\Scripts\uvicorn.exe app:app --host 127.0.0.1 --port 8000 --reload
+URL : http://127.0.0.1:8000
+Statut : Démarré et opérationnel (chargement des modèles et de la base de données OK).
+Serveur Frontend (Vite/React)
+
+Commande : npm.cmd run dev (exécuté dans 
+frontend/
+)
+URL : http://localhost:5173
+Statut : Prêt et connecté au proxy backend.

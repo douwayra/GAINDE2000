@@ -9,6 +9,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      window.addEventListener('error', function(event) {
+        fetch('/api/log-error', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: event.message,
+            source: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+            stack: event.error ? event.error.stack : null
+          })
+        }).catch(err => console.warn('Could not log error to backend:', err));
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        fetch('/api/log-error', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: 'Unhandled Promise Rejection: ' + event.reason,
+            stack: event.reason && event.reason.stack ? event.reason.stack : null
+          })
+        }).catch(err => console.warn('Could not log rejection to backend:', err));
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

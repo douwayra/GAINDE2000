@@ -144,6 +144,7 @@ export const countryCoords = {
   'Sweden': [18.64, 60.12],
   'Poland': [19.14, 51.91],
   'Senegal': [-14.45, 14.49]
+  
 };
 
 export function getStandardCountryName(rawName) {

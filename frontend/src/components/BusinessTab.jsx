@@ -68,7 +68,7 @@ export default function BusinessTab({ filters }) {
     <div className="dashboard-row full-width">
       <div className="chart-card">
         <div className="chart-card-title" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>🎯 Prospection Business & Ciblage Commercial</span>
+          <span>Prospection Business & Ciblage Commercial</span>
           <span style={{ fontSize: '0.8rem', background: 'var(--primary-light)', color: 'white', padding: '4px 10px', borderRadius: '12px', fontWeight: '600' }}>
             Accès Directeur / Admin
           </span>
@@ -160,7 +160,7 @@ export default function BusinessTab({ filters }) {
                     <td><span className="badge" style={{ background: 'rgba(20, 85, 162, 0.1)', color: 'var(--primary)', fontWeight: '600' }}>{p.BANQUE}</span></td>
                     <td><span className="badge" style={{ background: 'rgba(109, 181, 26, 0.1)', color: 'var(--success)', fontWeight: '600' }}>{p.ASSURANCE}</span></td>
                     <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--text-main)' }}>{formatCFA(p.total_valeur_cfa)}</td>
-                    <td style={{ textAlign: 'center' }}><span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{p.count_files}</span></td>
+                    <td style={{ textAlign: 'center' }}><span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{p.count_dossiers || 0}</span></td>
                   </tr>
                 ))
               )}

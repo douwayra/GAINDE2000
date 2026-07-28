@@ -7,7 +7,6 @@ import {
   ShieldAlert, 
   Layers, 
   Search as SearchIcon, 
-  CreditCard, 
   Cpu, 
   Users,
   BarChart3
@@ -21,7 +20,6 @@ import ExportsTab from './components/ExportsTab';
 import RisksTab from './components/RisksTab';
 import LogisticsTab from './components/LogisticsTab';
 import BusinessTab from './components/BusinessTab';
-import PaymentTab from './components/PaymentTab';
 import FinanceTab from './components/FinanceTab';
 import CybersecurityTab from './components/CybersecurityTab';
 import AdminUsersTab from './components/AdminUsersTab';
@@ -80,8 +78,8 @@ export default function App() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState('executive');
   const [anonymizeData, setAnonymizeData] = useState(false);
-  const [reportMonth, setReportMonth] = useState('02');
-  const [reportYear, setReportYear] = useState('2022');
+  const [reportMonth, setReportMonth] = useState('07');
+  const [reportYear, setReportYear] = useState('2026');
 
   // Smart Command Console States
   const [lang, setLang] = useState('fr');
@@ -100,8 +98,7 @@ export default function App() {
       setActiveTab("exports");
     } else if (cleanCmd.includes("import")) {
       setActiveTab("imports");
-    } else if (cleanCmd.includes("paiement") || cleanCmd === "payment") {
-      setActiveTab("payment");
+
     } else if (cleanCmd.includes("finance") || cleanCmd.includes("affaire") || cleanCmd.includes("prev") || cleanCmd === "finance") {
       setActiveTab("finance");
     } else if (cleanCmd.includes("securite") || cleanCmd === "cybersecurity") {
@@ -125,9 +122,10 @@ export default function App() {
 
 
   // Global Filters
-  const [filterYear, setFilterYear] = useState('');
+  const [filterYear, setFilterYear] = useState('2021');
   const [filterCountry, setFilterCountry] = useState('');
   const [filterBank, setFilterBank] = useState('');
+  const [filterOptions, setFilterOptions] = useState({ years: [], countries: [], banks: [] });
 
   // Selected Dossier for Timeline Modal
   const [selectedDossier, setSelectedDossier] = useState(null);
@@ -156,6 +154,24 @@ export default function App() {
     checkAuth();
   }, []);
 
+  const fetchFilterOptions = async () => {
+    try {
+      const res = await fetchWithAuth('/api/filter-options');
+      if (res.ok) {
+        const data = await res.json();
+        setFilterOptions(data);
+      }
+    } catch (e) {
+      console.error("Error loading filter options:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (authenticated) {
+      fetchFilterOptions();
+    }
+  }, [authenticated]);
+
   // Fetch Dashboard Data & Dossiers Preview & Budget Alerts
   const fetchData = async () => {
     if (!authenticated) return;
@@ -175,8 +191,14 @@ export default function App() {
         }
         return res.json();
       });
+      const filtersQuery = [
+        filterYear ? `year=${encodeURIComponent(filterYear)}` : null,
+        filterCountry ? `country=${encodeURIComponent(filterCountry)}` : null,
+        filterBank ? `bank=${encodeURIComponent(filterBank)}` : null,
+      ].filter(Boolean).join('&');
+
       // Fetch Dossiers preview
-      const dossiersPromise = fetchWithAuth('/api/dossiers-preview').then(async res => {
+      const dossiersPromise = fetchWithAuth(`/api/dossiers-preview${filtersQuery ? `?${filtersQuery}` : ''}`).then(async res => {
         if (!res.ok) throw new Error("Erreur de chargement des dossiers.");
         return res.json();
       }).catch(() => []);
@@ -270,16 +292,16 @@ export default function App() {
     if (tabId === 'executive') return true;
 
     if (role === 'direction') {
-      return ['imports', 'exports', 'logistics', 'business', 'payment', 'finance'].includes(tabId);
+      return ['imports', 'exports', 'logistics', 'business', 'finance'].includes(tabId);
     }
     if (role === 'inspecteur') {
-      return ['imports', 'exports', 'risks', 'payment'].includes(tabId);
+      return ['imports', 'exports', 'risks'].includes(tabId);
     }
     if (role === 'transitaire') {
-      return ['imports', 'exports', 'payment'].includes(tabId);
+      return ['imports', 'exports'].includes(tabId);
     }
     if (role === 'partenaire') {
-      return ['logistics', 'payment'].includes(tabId);
+      return ['logistics'].includes(tabId);
     }
     if (role === 'statisticien' || role === 'journaliste') {
       return ['imports', 'exports', 'logistics', 'finance'].includes(tabId);
@@ -300,8 +322,8 @@ export default function App() {
   // Tab Details for Page Header
   const tabDetails = {
     executive: {
-      label: "Vue Globale",
-      desc: "Statistiques douanières macro et indicateurs clés en temps réel.",
+      label: "Dashboard Exécutif",
+      desc: "Vue d'ensemble de l'activité commerciale, KPIs macro et cartographie.",
       icon: LayoutDashboard
     },
     imports: {
@@ -329,18 +351,14 @@ export default function App() {
       desc: "Opportunités de prospection commerciale et ciblage bancaire.",
       icon: SearchIcon
     },
-    payment: {
-      label: "Orbus Paiement",
-      desc: "Signature électronique et validation de transactions financières.",
-      icon: CreditCard
-    },
+
     finance: {
       label: "Finances & Prévisions",
       desc: "Chiffres d'affaires, classement des gros importateurs et projections financières.",
       icon: BarChart3
     },
     cybersecurity: {
-      label: "Cybersécurité & Audit IT",
+      label: "Audit IT & Cybersécurité  ",
       desc: "Suivi d'accès réseau, audit de sécurité et détection d'intrusions.",
       icon: Cpu
     },
@@ -392,10 +410,9 @@ export default function App() {
           <img src="assets/gainde_logo_transparent.png" alt="Orbus Sentinel Logo" />
           <div className="sidebar-logo-text">
             <h1>Orbus Sentinel</h1>
-            <p>saaytu business</p>
+            {/* <p>saaytu business</p> */}
           </div>
         </div>
-
         <nav className="sidebar-menu">
           {Object.entries(tabDetails).map(([tabId, info]) => {
             if (!isTabVisible(tabId)) return null;
@@ -477,7 +494,7 @@ export default function App() {
                   🚢 Stress-Test Logistique ('logistique')
                 </div>
                 <div className="smart-suggestion-item" onMouseDown={() => handleExecuteCommand("pdf")}>
-                  ⚡ Générer Rapport IA ('pdf')
+                  ⚡ Générer Rapport  ('pdf')
                 </div>
                 <div className="smart-suggestion-item" onMouseDown={() => handleExecuteCommand("theme")}>
                   🌓 Basculer Thème ('theme')
@@ -498,7 +515,7 @@ export default function App() {
                 disabled={pdfLoading}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
-                <span>{pdfLoading ? 'Génération...' : 'Rapport IA (PDF)'}</span>
+                <span>{pdfLoading ? 'Génération...' : 'Générateur de Rapport'}</span>
               </button>
             )}
             
@@ -560,9 +577,9 @@ export default function App() {
                 onChange={(e) => setFilterYear(e.target.value)}
               >
                 <option value="">Toutes</option>
-                <option value="2020">2020</option>
-                <option value="2021">2021</option>
-                <option value="2022">2022</option>
+                {filterOptions.years.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
               </select>
             </div>
             
@@ -574,14 +591,9 @@ export default function App() {
                 style={{ minWidth: '150px', maxWidth: '200px' }}
               >
                 <option value="">Tous les pays</option>
-                <option value="FRANCE">France</option>
-                <option value="CHINE">Chine</option>
-                <option value="INDE">Inde</option>
-                <option value="BELGIQUE">Belgique</option>
-                <option value="ESPAGNE">Espagne</option>
-                <option value="ITALIE">Italie</option>
-                <option value="MALI">Mali</option>
-                <option value="MAROC">Maroc</option>
+                {filterOptions.countries.map(c => (
+                  <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()}</option>
+                ))}
               </select>
             </div>
             
@@ -593,14 +605,9 @@ export default function App() {
                 style={{ minWidth: '150px', maxWidth: '200px' }}
               >
                 <option value="">Toutes les banques</option>
-                <option value="SGBS">SGBS</option>
-                <option value="CBAO Groupe Attijariwafa Bank">CBAO</option>
-                <option value="BICIS">BICIS</option>
-                <option value="ORABANK">Orabank</option>
-                <option value="ECOBANK">Ecobank</option>
-                <option value="CITIBANK">Citibank</option>
-                <option value="BOA">BOA</option>
-                <option value="BIS">BIS</option>
+                {filterOptions.banks.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
               </select>
             </div>
 
@@ -629,6 +636,7 @@ export default function App() {
                 onTargetFile={handleCiblerDossier}
                 theme={theme}
                 lang={lang}
+                filterOptions={filterOptions}
               />
             )}
             {activeTab === 'imports' && <ImportsTab data={dashboardData} theme={theme} lang={lang} />}
@@ -641,8 +649,8 @@ export default function App() {
                 lang={lang}
               />
             )}
-            {activeTab === 'payment' && <PaymentTab lang={lang} />}
-            {activeTab === 'finance' && <FinanceTab theme={theme} />}
+
+            {activeTab === 'finance' && <FinanceTab theme={theme} filters={{ year: filterYear, country: filterCountry, bank: filterBank }} />}
             {activeTab === 'cybersecurity' && <CybersecurityTab role={role} lang={lang} />}
             {activeTab === 'admin-users' && <AdminUsersTab lang={lang} />}
           </div>
@@ -774,9 +782,9 @@ export default function App() {
                     onChange={(e) => setReportYear(e.target.value)}
                     style={{ width: '100%', background: '#0f172a', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px 10px', color: 'white', fontSize: '0.8rem' }}
                   >
-                    <option value="2020">2020</option>
-                    <option value="2021">2021</option>
-                    <option value="2022">2022</option>
+                    {filterOptions.years.map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
                   </select>
                 </div>
               </div>

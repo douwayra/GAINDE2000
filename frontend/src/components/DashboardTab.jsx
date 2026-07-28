@@ -4,7 +4,7 @@ import { formatCFA, formatWeight, fetchWithAuth } from '../utils/api';
 import { getStandardCountryName, countryCoords } from '../utils/mapUtils';
 import AnimatedCounter from './AnimatedCounter';
 
-export default function DashboardTab({ data, files, role, onFileClick, onTargetFile, theme }) {
+export default function DashboardTab({ data, files, role, onFileClick, onTargetFile, theme, filterOptions }) {
   const [mapMode, setMapMode] = useState('imports');
   const [exportTransport, setExportTransport] = useState('');
   const [exportCountry, setExportCountry] = useState('');
@@ -661,10 +661,13 @@ export default function DashboardTab({ data, files, role, onFileClick, onTargetF
                 +1,5%
               </span>
             </div>
-            <div className="kpi-sparkline" style={{ justifyContent: 'center' }}>
-              <svg width="30" height="30" viewBox="0 0 36 36">
-                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#edf0f7" strokeWidth="3.5" />
-                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#8b5cf6" strokeDasharray="78, 100" strokeWidth="3.5" strokeLinecap="round" />
+            <div className="kpi-sparkline">
+              <svg width="60" height="30" viewBox="0 0 60 30" style={{ overflow: 'visible' }}>
+                <rect x="0" y="15" width="5" height="15" rx="2.5" fill="#8b5cf6" />
+                <rect x="12" y="10" width="5" height="20" rx="2.5" fill="#8b5cf6" />
+                <rect x="24" y="18" width="5" height="12" rx="2.5" fill="#8b5cf6" />
+                <rect x="36" y="8" width="5" height="22" rx="2.5" fill="#8b5cf6" />
+                <rect x="48" y="5" width="5" height="25" rx="2.5" fill="#8b5cf6" />
               </svg>
             </div>
           </div>
@@ -1008,12 +1011,9 @@ export default function DashboardTab({ data, files, role, onFileClick, onTargetF
                   style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', fontFamily: 'inherit', background: 'var(--card-bg)', color: 'var(--text-main)', width: '100%' }}
                 >
                   <option value="">Toutes les années</option>
-                  <option value="2020">2020</option>
-                  <option value="2021">2021</option>
-                  <option value="2022">2022</option>
-                  <option value="2023">2023</option>
-                  <option value="2024">2024</option>
-                  <option value="2025">2025</option>
+                  {(filterOptions?.years || ["2020", "2021", "2022"]).map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
                 </select>
               </div>
             </div>

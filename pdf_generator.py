@@ -61,6 +61,15 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.5)
         self.line(36, 746, 576, 746)
         
+        # DLP Security Watermark (SP21, SP51, DLP)
+        self.saveState()
+        self.setFont("Helvetica-Bold", 30)
+        self.setFillColor(colors.HexColor("#94a3b8"), alpha=0.15)
+        self.translate(300, 400)
+        self.rotate(45)
+        self.drawCentredString(0, 0, "GAINDE2000 - DOCUMENT CONFIDENTIEL")
+        self.restoreState()
+
         # Footer
         self.line(36, 42, 576, 42)
         footer_text = "CONFIDENTIAL -- SENEGAL GENERAL DIRECTORATE OF CUSTOMS" if self.lang == 'en' else "CONFIDENTIEL -- DIRECTION GENERALE DES DOUANES DU SENEGAL"
